@@ -7,102 +7,29 @@ class DataLoader:
         self.data_dir = data_dir
     
     def load_cmeeev2_data(self, split: str) -> List[Dict]:
-        """
-        加载CMeEE-V2数据集
-        Args:
-            split: 数据集分割，可选值：train, dev, test
-        Returns:
-            数据列表，每个元素包含text和entities字段
-        """
         file_map = {
             'train': 'CMeEE-V2_train.json',
             'dev': 'CMeEE-V2_dev.json',
             'test': 'CMeEE-V2_test.json'
         }
-        
-        file_path = os.path.join(self.data_dir, 'CMeEE-V2', file_map[split])
-        
+        file_path = os.path.join(self.data_dir, file_map[split])
         with open(file_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
-        
         return data
     
     def load_chip_ctc_data(self, split: str) -> List[Dict]:
-        """
-        加载CHIP-CTC数据集
-        Args:
-            split: 数据集分割，可选值：train, dev, test
-        Returns:
-            数据列表，每个元素包含id, text和label字段
-        """
         file_map = {
             'train': 'CHIP-CTC_train.json',
             'dev': 'CHIP-CTC_dev.json',
             'test': 'CHIP-CTC_test.json'
         }
-        
         file_path = os.path.join(self.data_dir, 'CHIP-CTC', file_map[split])
-        
         with open(file_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
-        
         return data
     
-    def preprocess_text(self, text: str) -> str:
-        """
-        文本预处理
-        Args:
-            text: 原始文本
-        Returns:
-            预处理后的文本
-        """
-        # 去除首尾空格
-        text = text.strip()
-        # 替换多余的空格为单个空格
-        text = ' '.join(text.split())
-        return text
-    
-    def convert_cmeeev2_to_bio(self, data: List[Dict]) -> List[Tuple[str, List[str]]]:
-        """
-        将CMeEE-V2数据转换为BIO标注格式
-        Args:
-            data: CMeEE-V2原始数据
-        Returns:
-            转换后的数据，每个元素为(text, labels)元组
-        """
-        bio_data = []
-        
-        for item in data:
-            text = item['text']
-            entities = item.get('entities', [])
-            
-            # 初始化标签列表
-            labels = ['O'] * len(text)
-            
-            # 处理每个实体
-            for entity in entities:
-                start = entity['start_idx']
-                end = entity['end_idx']
-                entity_type = entity['type']
-                
-                # 设置B标签
-                labels[start] = f'B-{entity_type}'
-                # 设置I标签
-                for i in range(start + 1, end + 1):
-                    if i < len(labels):
-                        labels[i] = f'I-{entity_type}'
-            
-            bio_data.append((text, labels))
-        
-        return bio_data
-    
     def load_category_mapping(self) -> Dict[str, int]:
-        """
-        加载分类映射
-        Returns:
-            类别到索引的映射
-        """
-        # 这里直接定义44个类别，实际使用时可以从category.xlsx加载
+        # 44类定义
         categories = [
             'Age', 'Gender', 'Race', 'Ethnicity', 'Smoking', 'Alcohol', 'Pregnancy',
             'Breast Feeding', 'Contraception', 'Menopause', 'Weight', 'Height',
@@ -115,5 +42,49 @@ class DataLoader:
             'Stem Cell Transplant', 'Blood Transfusion', 'Dialysis', 'Organ Transplant',
             'Palliative Care', 'Hospice Care', 'Other Therapy', 'Other'
         ]
-        
         return {cat: idx for idx, cat in enumerate(categories)}
+
+    def convert_cmeeev2_to_bio(self, data: List[Dict]) -> List[Tuple[str, List[str]]]:
+        """
+        [关键优化] 将CMeEE-V2数据转换为BIO标注格式
+        采用“最长实体优先”策略来缓解嵌套实体问题
+        """
+        bio_data = []
+        
+        for item in data:
+            text = item['text']
+            entities = item.get('entities', [])
+            
+            # 初始化全是 'O'
+            labels = ['O'] * len(text)
+            
+            # [关键步骤] 按照实体长度降序排序
+            # 这样长的实体会先占据位置，避免被短实体截断或覆盖
+            if entities:
+                sorted_entities = sorted(entities, key=lambda x: (x['end_idx'] - x['start_idx']), reverse=True)
+                
+                for entity in sorted_entities:
+                    start = entity['start_idx']
+                    end = entity['end_idx']
+                    entity_type = entity['type']
+                    
+                    # 检查该区间是否已经被占用（只要有一个字不为O，就算占用）
+                    # 注意：BIO策略下，无法完美处理嵌套，这里选择保留最长实体
+                    is_occupied = False
+                    for i in range(start, end): # end_idx 在 CMeEE 是开区间还是闭区间需注意，通常是左闭右开 [start, end)
+                         # CMeEE 数据样例中: "start_idx": 3, "end_idx": 8, "entity": "房室结消融" (5个字)
+                         # 说明是左闭右开区间 range(3, 8) -> 3,4,5,6,7
+                        if i < len(labels) and labels[i] != 'O':
+                            is_occupied = True
+                            break
+                    
+                    if not is_occupied:
+                        if start < len(labels):
+                            labels[start] = f'B-{entity_type}'
+                        for i in range(start + 1, end):
+                            if i < len(labels):
+                                labels[i] = f'I-{entity_type}'
+            
+            bio_data.append((text, labels))
+        
+        return bio_data
