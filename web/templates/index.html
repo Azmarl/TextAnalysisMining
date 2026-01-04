@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>医学文本挖掘系统</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- 自定义样式 -->
+    <style>
+        /* 基础样式 */
+        body {
+            background-color: #f0f2f5;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+        }
+        
+        /* 容器样式 - 格式塔接近原则 */
+        .container {
+            margin-top: 40px;
+            max-width: 1200px;
+            padding: 0 20px;
+        }
+        
+        /* 标题样式 - 格式塔对称性 */
+        h1 {
+            color: #2c3e50;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        
+        .text-muted {
+            color: #6c757d !important;
+        }
+        
+        /* 卡片样式 - 格式塔闭合原则 */
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
+            margin-bottom: 30px;
+            overflow: hidden;
+            background: white;
+        }
+        
+        /* 卡片头部样式 - 改进对比度 */
+        .card-header {
+            background-color: #ffffff;
+            border-bottom: 2px solid #e9ecef;
+            border-radius: 12px 12px 0 0 !important;
+            padding: 0;
+        }
+        
+        /* 标签页样式 - 菲茨定律：增大交互区域 */
+        .nav-tabs {
+            border-bottom: none;
+            display: flex;
+            background: #f8f9fa;
+            padding: 4px;
+            border-radius: 12px;
+            margin: 16px;
+        }
+        
+        .nav-tabs .nav-item {
+            flex: 1;
+            text-align: center;
+        }
+        
+        .nav-tabs .nav-link {
+            /* 菲茨定律：增大点击区域 */
+            padding: 16px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #6c757d;
+            background-color: transparent;
+            border: none;
+            border-radius: 8px;
+            margin: 0;
+            transition: all 0.2s ease;
+            /* 格式塔相似性原则：统一的视觉样式 */
+            box-shadow: none;
+        }
+        
+        /* 活动标签样式 - 格式塔图形-背景原则 */
+        .nav-tabs .nav-link.active {
+            background-color: #ffffff;
+            color: #2c3e50;
+            border: none;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+            transform: translateY(-1px);
+        }
+        
+        /* 悬停效果 - 增强交互反馈 */
+        .nav-tabs .nav-link:hover:not(.active) {
+            background-color: #e9ecef;
+            color: #495057;
+            border: none;
+        }
+        
+        /* 标签内容区域 */
+        .tab-content {
+            padding: 32px;
+            border: none;
+            border-radius: 0 0 12px 12px;
+            background: white;
+        }
+        
+        /* 输入区域 - 菲茨定律：增大输入框 */
+        .form-label {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 12px;
+            display: block;
+        }
+        
+        .text-input {
+            min-height: 180px;
+            font-size: 16px;
+            padding: 16px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            resize: vertical;
+        }
+        
+        .text-input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+        
+        /* 按钮样式 - 菲茨定律：增大点击区域 */
+        .btn-primary {
+            background-color: #3498db;
+            border: none;
+            padding: 14px 32px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 8px rgba(52, 152, 219, 0.2);
+        }
+        
+        .btn-primary:hover {
+            background-color: #2980b9;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 12px rgba(52, 152, 219, 0.3);
+        }
+        
+        /* 结果区域 - 格式塔分组原则 */
+        .result-section {
+            margin-top: 24px;
+            padding: 24px;
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #3498db;
+        }
+        
+        /* 实体标签样式 - 格式塔色彩编码 */
+        .entity-tag {
+            display: inline-block;
+            padding: 8px 16px;
+            margin: 6px 4px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            color: white;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* 增强的实体类型色彩编码 */
+        .entity-dis { background-color: #e74c3c; }
+        .entity-sym { background-color: #f39c12; }
+        .entity-dru { background-color: #27ae60; }
+        .entity-equ { background-color: #f1c40f; color: #2c3e50; }
+        .entity-pro { background-color: #3498db; }
+        .entity-bod { background-color: #9b59b6; }
+        .entity-ite { background-color: #e84393; }
+        .entity-mic { background-color: #1abc9c; }
+        .entity-dep { background-color: #34495e; }
+        
+        /* 高亮文本 - 格式塔强调原则 */
+        .highlight {
+            background-color: #fff3cd;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            border: 1px solid #ffeeba;
+        }
+        
+        /* 表格样式 - 增强可读性 */
+        .table {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        .table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            border-bottom: 2px solid #e9ecef;
+            padding: 16px;
+        }
+        
+        .table td {
+            padding: 16px;
+            border-bottom: 1px solid #f1f3f5;
+        }
+        
+        /* 加载状态 - 增强视觉反馈 */
+        .spinner-border {
+            width: 2rem;
+            height: 2rem;
+            color: #3498db;
+        }
+        
+        /* 分类结果样式 - 格式塔强调 */
+        .alert-success {
+            background-color: #d4edda;
+            border: none;
+            border-radius: 8px;
+            padding: 20px;
+            font-weight: 600;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        /* 页脚样式 */
+        footer {
+            margin-top: 60px;
+            padding: 20px;
+            text-align: center;
+            color: #6c757d;
+        }
+        
+        /* 响应式设计 - 确保在小屏幕上的可用性 */
+        @media (max-width: 768px) {
+            .nav-tabs {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .nav-tabs .nav-item {
+                flex: none;
+            }
+            
+            .tab-content {
+                padding: 20px;
+            }
+            
+            .btn-primary {
+                width: 100%;
+                margin-top: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 标题 -->
+        <h1 class="text-center mb-4" style="color: #0d6efd;">医学文本挖掘系统</h1>
+        <p class="text-center text-muted mb-5">基于BERT的医学实体抽取与临床文本分类</p>
+
+        <!-- 标签页 -->
+        <div class="card">
+            <div class="card-header">
+                <ul class="nav nav-tabs card-header-tabs" id="myTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="entity-tab" data-bs-toggle="tab" data-bs-target="#entity" type="button" role="tab" aria-controls="entity" aria-selected="true">医学实体抽取</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="text-tab" data-bs-toggle="tab" data-bs-target="#text" type="button" role="tab" aria-controls="text" aria-selected="false">临床文本分类</button>
+                    </li>
+                </ul>
+            </div>
+            <div class="tab-content" id="myTabContent">
+                <!-- 医学实体抽取 -->
+                <div class="tab-pane fade show active" id="entity" role="tabpanel" aria-labelledby="entity-tab">
+                    <div class="mb-3">
+                        <label for="entityText" class="form-label">输入医学文本：</label>
+                        <textarea class="form-control text-input" id="entityText" placeholder="请输入医学文本，例如：患者有糖尿病，出现了尿频、尿急的症状。"></textarea>
+                    </div>
+                    <div class="d-flex justify-content-end">
+                        <button type="button" class="btn btn-primary" onclick="predictEntity()">
+                            <span id="entityBtnText">实体抽取</span>
+                            <span class="spinner-border spinner-border-sm" id="entitySpinner" style="display: none;"></span>
+                        </button>
+                    </div>
+                    
+                    <!-- 结果展示 -->
+                    <div id="entityResult" class="result-section">
+                        <h4>预测结果：</h4>
+                        <div id="entityResultContent">
+                            <p class="text-muted">点击"实体抽取"按钮查看结果</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 临床文本分类 -->
+                <div class="tab-pane fade" id="text" role="tabpanel" aria-labelledby="text-tab">
+                    <div class="mb-3">
+                        <label for="classifyText" class="form-label">输入临床筛选标准：</label>
+                        <textarea class="form-control text-input" id="classifyText" placeholder="请输入临床筛选标准，例如：18岁以下的患者。"></textarea>
+                    </div>
+                    <div class="d-flex justify-content-end">
+                        <button type="button" class="btn btn-primary" onclick="predictText()">
+                            <span id="textBtnText">文本分类</span>
+                            <span class="spinner-border spinner-border-sm" id="textSpinner" style="display: none;"></span>
+                        </button>
+                    </div>
+                    
+                    <!-- 结果展示 -->
+                    <div id="textResult" class="result-section">
+                        <h4>预测结果：</h4>
+                        <div id="textResultContent">
+                            <p class="text-muted">点击"文本分类"按钮查看结果</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 页脚 -->
+        <footer class="text-center text-muted mt-5">
+            <p>医学文本挖掘系统 © 2026</p>
+        </footer>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- 自定义JavaScript -->
+    <script>
+        // 实体抽取预测
+        function predictEntity() {
+            const text = document.getElementById('entityText').value.trim();
+            if (!text) {
+                alert('请输入文本');
+                return;
+            }
+            
+            // 显示加载状态
+            document.getElementById('entityBtnText').textContent = '抽取中...';
+            document.getElementById('entitySpinner').style.display = 'inline-block';
+            
+            // 发送请求
+            fetch('/predict_entity', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ text: text })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // 隐藏加载状态
+                document.getElementById('entityBtnText').textContent = '实体抽取';
+                document.getElementById('entitySpinner').style.display = 'none';
+                
+                if (data.success) {
+                    displayEntityResult(data);
+                } else {
+                    alert('预测失败：' + data.error);
+                }
+            })
+            .catch(error => {
+                // 隐藏加载状态
+                document.getElementById('entityBtnText').textContent = '实体抽取';
+                document.getElementById('entitySpinner').style.display = 'none';
+                alert('预测失败：' + error.message);
+            });
+        }
+        
+        // 显示实体抽取结果
+        function displayEntityResult(data) {
+            const entities = data.entities;
+            const resultDiv = document.getElementById('entityResultContent');
+            
+            if (entities.length === 0) {
+                resultDiv.innerHTML = '<p class="text-muted">未检测到医学实体</p>';
+                return;
+            }
+            
+            // 生成高亮文本
+            let highlightedText = data.text;
+            const entityInfo = [];
+            
+            // 按起始位置倒序排序，避免替换影响后续索引
+            entities.sort((a, b) => b.start_idx - a.start_idx);
+            
+            entities.forEach(entity => {
+                const start = entity.start_idx;
+                const end = entity.end_idx + 1; // 因为字符串切片是左闭右开
+                const entityText = data.text.substring(start, end);
+                const entityType = entity.type;
+                
+                // 添加高亮
+                const before = highlightedText.substring(0, start);
+                const after = highlightedText.substring(end);
+                highlightedText = before + `<span class="highlight">${entityText}</span>` + after;
+                
+                // 收集实体信息
+                entityInfo.push({
+                    text: entityText,
+                    type: entityType,
+                    start: start,
+                    end: end - 1
+                });
+            });
+            
+            // 生成实体标签
+            let tagsHtml = '';
+            entityInfo.forEach(entity => {
+                tagsHtml += `<span class="entity-tag entity-${entity.type}">${entity.text} (${entity.type})</span>`;
+            });
+            
+            // 显示结果
+            resultDiv.innerHTML = `
+                <div class="mb-3">
+                    <h5>高亮文本：</h5>
+                    <p>${highlightedText}</p>
+                </div>
+                <div class="mb-3">
+                    <h5>识别的实体：</h5>
+                    <div>${tagsHtml}</div>
+                </div>
+                <div>
+                    <h5>详细信息：</h5>
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>实体文本</th>
+                                <th>类型</th>
+                                <th>起始位置</th>
+                                <th>结束位置</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${entityInfo.map(entity => `
+                                <tr>
+                                    <td>${entity.text}</td>
+                                    <td>${entity.type}</td>
+                                    <td>${entity.start}</td>
+                                    <td>${entity.end}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+        
+        // 文本分类预测
+        function predictText() {
+            const text = document.getElementById('classifyText').value.trim();
+            if (!text) {
+                alert('请输入文本');
+                return;
+            }
+            
+            // 显示加载状态
+            document.getElementById('textBtnText').textContent = '分类中...';
+            document.getElementById('textSpinner').style.display = 'inline-block';
+            
+            // 发送请求
+            fetch('/predict_text', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ text: text })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // 隐藏加载状态
+                document.getElementById('textBtnText').textContent = '文本分类';
+                document.getElementById('textSpinner').style.display = 'none';
+                
+                if (data.success) {
+                    displayTextResult(data);
+                } else {
+                    alert('预测失败：' + data.error);
+                }
+            })
+            .catch(error => {
+                // 隐藏加载状态
+                document.getElementById('textBtnText').textContent = '文本分类';
+                document.getElementById('textSpinner').style.display = 'none';
+                alert('预测失败：' + error.message);
+            });
+        }
+        
+        // 显示文本分类结果
+        function displayTextResult(data) {
+            const resultDiv = document.getElementById('textResultContent');
+            
+            resultDiv.innerHTML = `
+                <div class="mb-3">
+                    <h5>输入文本：</h5>
+                    <p>${data.text}</p>
+                </div>
+                <div class="mb-3">
+                    <h5>预测类别：</h5>
+                    <div class="alert alert-success" role="alert" style="font-size: 20px; font-weight: bold;">
+                        ${data.label}
+                    </div>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
