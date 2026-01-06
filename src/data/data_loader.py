@@ -23,7 +23,7 @@ class DataLoader:
             'dev': 'CHIP-CTC_dev.json',
             'test': 'CHIP-CTC_test.json'
         }
-        file_path = os.path.join(self.data_dir, 'CHIP-CTC', file_map[split])
+        file_path = os.path.join(self.data_dir, file_map[split])
         with open(file_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
         return data
@@ -31,16 +31,16 @@ class DataLoader:
     def load_category_mapping(self) -> Dict[str, int]:
         # 44类定义
         categories = [
-            'Age', 'Gender', 'Race', 'Ethnicity', 'Smoking', 'Alcohol', 'Pregnancy',
-            'Breast Feeding', 'Contraception', 'Menopause', 'Weight', 'Height',
-            'BMI', 'Vital Signs', 'Physical Examination', 'Laboratory Tests',
-            'Imaging Studies', 'Electrocardiogram', 'Endoscopy', 'Biopsy',
-            'Pathology', 'Genetics', 'Family History', 'Personal History',
-            'Medical History', 'Surgical History', 'Medication History',
-            'Allergy History', 'Sign', 'Symptom', 'Disease', 'Therapy or Surgery',
-            'Radiation Therapy', 'Chemotherapy', 'Immunotherapy', 'Targeted Therapy',
-            'Stem Cell Transplant', 'Blood Transfusion', 'Dialysis', 'Organ Transplant',
-            'Palliative Care', 'Hospice Care', 'Other Therapy', 'Other'
+            'Disease', 'Symptom', 'Sign', 'Pregnancy-related Activity', 'Neoplasm Status', 'Non-Neoplasm Disease Stage', 'Allergy Intolerance',
+            'Organ or Tissue Status', 'Life Expectancy', 'Oral related', 'Pharmaceutical Substance or Drug', 'Therapy or Surgery',
+            'Device', 'Nursing', 'Diagnostic', 'Laboratory Examinations',
+            'Risk Assessment', 'Receptor Status', 'Age', 'Special Patient Characteristic',
+            'Literacy', 'Gender', 'Education', 'Address',
+            'Ethnicity', 'Consent', 'Enrollment in other studies',
+            'Researcher Decision', 'Capacity', 'Ethical Audit', 'Compliance with Protocol', 'Addictive Behavior',
+            'Bedtime', 'Exercise', 'Diet', 'Alcohol Consumer',
+            'Sexual related', 'Smoking Status', 'Blood Donation', 'Encounter',
+            'Disabilities', 'Healthy', 'Data Accessible', 'Multiple'
         ]
         return {cat: idx for idx, cat in enumerate(categories)}
 

@@ -279,8 +279,9 @@ class ResultSaver:
         for item, pred_label in zip(data, pred_labels):
             result = {
                 'id': item['id'],
-                'text': item['text'],
-                'label': pred_label
+                'label': pred_label,
+                'text': item['text']
+               
             }
             results.append(result)
         
