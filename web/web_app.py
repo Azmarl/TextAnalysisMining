@@ -23,12 +23,12 @@ def init_models():
     
     print("正在加载实体抽取模型...")
     entity_model = EntityExtractionModel()
-    entity_model.load_model('./models/entity_extraction')
+    entity_model.load_model('./models/entity_extraction_new')
     print("实体抽取模型加载完成")
     
     print("正在加载文本分类模型...")
     text_model = TextClassificationModel()
-    text_model.load_model('./models/text_classification')
+    text_model.load_model('./models/text_classification_new')
     
     # 加载类别映射
     data_loader = DataLoader('.')
@@ -72,15 +72,16 @@ def predict_text():
         if not text:
             return jsonify({'error': '文本不能为空'}), 400
         
-        # 使用模型进行预测
-        label = text_model.predict(text)
+        # 使用模型进行预测 (现在返回的是一个字典)
+        result_dict = text_model.predict(text)
         
         return jsonify({
             'success': True,
             'text': text,
-            'label': label
+            'result': result_dict # 将整个结果字典传给前端
         })
     except Exception as e:
+        print(f"Error: {e}")
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
@@ -90,4 +91,4 @@ if __name__ == '__main__':
     # 启动Flask应用
     print("医学文本挖掘系统启动成功！")
     print("访问地址: http://127.0.0.1:5000")
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=False, host='0.0.0.0', port=5000)

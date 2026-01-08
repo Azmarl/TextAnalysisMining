@@ -52,13 +52,14 @@ python -m pip install -r requirements.txt
 
 ## 依赖包说明
 
+- python==3.12.4
 - torch==2.2.0
 - transformers==4.45.1
 - numpy==1.26.4
 - pandas==2.0.0
 - scikit-learn==1.2.0
 - flask==3.1.2
-- torchcrf==1.1.0
+- pytorch-crf
 - tqdm==4.67.1
 
 ## 使用方法

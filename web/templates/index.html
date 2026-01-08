@@ -6,14 +6,53 @@
     <title>医学文本挖掘系统</title>
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- 确保引入 Chart.js -->
     <!-- 自定义样式 -->
     <style>
         /* 基础样式 */
-        body {
-            background-color: #f0f2f5;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
+        body { background-color: #f0f2f5; font-family: 'Segoe UI', sans-serif; }
+        .container { margin-top: 40px; max-width: 1200px; padding: 0 20px; }
+        .card { border: none; border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.08); margin-bottom: 30px; background: white; }
+        .nav-tabs .nav-link { padding: 16px 24px; font-weight: 600; color: #6c757d; border: none; }
+        .nav-tabs .nav-link.active { color: #2c3e50; background-color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+        .tab-content { padding: 32px; background: white; border-radius: 0 0 12px 12px; }
+        .btn-primary { background-color: #3498db; border: none; padding: 10px 24px; }
+        .result-section { margin-top: 24px; padding: 24px; background-color: #ffffff; border-radius: 10px; border: 1px solid #eee; }
+
+        .prediction-card {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
+        .top-label-box {
+            background-color: #e8f5e9; /* 浅绿色背景 */
+            color: #2e7d32;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 24px;
+            font-weight: bold;
+            text-align: left;
+            margin-bottom: 10px;
+            border-left: 5px solid #2e7d32;
+        }
+        .confidence-score {
+            font-size: 36px;
+            font-weight: 300;
+            color: #333;
+        }
+        .highlight { background-color: #fff3cd; padding: 2px 5px; border-radius: 3px; font-weight: bold; }
+        .entity-tag { display: inline-block; padding: 5px 10px; margin: 2px; border-radius: 15px; color: white; font-size: 12px; }
+        /* 实体颜色 */
+        .entity-dis { background-color: #e74c3c; } .entity-sym { background-color: #f39c12; }
+        .entity-dru { background-color: #27ae60; } .entity-equ { background-color: #f1c40f; color: #333; }
+        .entity-pro { background-color: #3498db; } .entity-bod { background-color: #9b59b6; }
+        .entity-ite { background-color: #e84393; } .entity-mic { background-color: #1abc9c; }
+        .entity-dep { background-color: #34495e; }
         
         /* 容器样式 - 格式塔接近原则 */
         .container {
@@ -254,6 +293,50 @@
                 margin-top: 16px;
             }
         }
+
+        /* --- 数据分析组件样式 --- */
+        .stat-card {
+            padding: 20px;
+            border-radius: 10px;
+            text-align: left;
+            height: 100%;
+            transition: transform 0.2s;
+        }
+        .stat-card:hover { transform: translateY(-3px); }
+        .stat-label { color: #6c757d; font-size: 0.9rem; margin-bottom: 8px; font-weight: 600; }
+        .stat-value { font-size: 2.2rem; font-weight: 300; color: #2c3e50; }
+        .stat-badge { font-size: 0.8rem; padding: 4px 8px; border-radius: 4px; margin-top: 5px; display: inline-block; }
+        .bg-light-blue { background-color: #f0f7ff; }
+        
+        .analysis-summary {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 10px;
+            margin-top: 30px;
+            border-left: 5px solid #6f42c1;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+        }
+        .summary-title { font-weight: 700; color: #495057; display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+        .summary-content h6 { font-weight: 700; margin-top: 15px; color: #2c3e50; }
+        .summary-content ul { padding-left: 20px; color: #555; }
+        .summary-content li { margin-bottom: 8px; }
+        
+        .collapse-btn {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            width: 100%;
+            text-align: left;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: 600;
+            color: #495057;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .collapse-btn:hover { background-color: #e9ecef; }
+        
+        footer { margin-top: 60px; padding: 20px; text-align: center; color: #6c757d; }
     </style>
 </head>
 <body>
@@ -271,6 +354,11 @@
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="text-tab" data-bs-toggle="tab" data-bs-target="#text" type="button" role="tab" aria-controls="text" aria-selected="false">临床文本分类</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" id="analysis-tab" data-bs-toggle="tab" data-bs-target="#analysis" type="button">
+                            数据分析
+                        </button>
                     </li>
                 </ul>
             </div>
@@ -298,25 +386,152 @@
                 </div>
 
                 <!-- 临床文本分类 -->
-                <div class="tab-pane fade" id="text" role="tabpanel" aria-labelledby="text-tab">
+                <div class="tab-pane fade" id="text">
                     <div class="mb-3">
-                        <label for="classifyText" class="form-label">输入临床筛选标准：</label>
-                        <textarea class="form-control text-input" id="classifyText" placeholder="请输入临床筛选标准，例如：18岁以下的患者。"></textarea>
+                        <label class="form-label">分析该文本属于哪一类临床试验筛选标准：</label>
+                        <textarea class="form-control" id="classifyText" rows="4" placeholder="例如：年龄大于18岁且小于65岁..."></textarea>
                     </div>
                     <div class="d-flex justify-content-end">
-                        <button type="button" class="btn btn-primary" onclick="predictText()">
-                            <span id="textBtnText">文本分类</span>
-                            <span class="spinner-border spinner-border-sm" id="textSpinner" style="display: none;"></span>
-                        </button>
+                        <button class="btn btn-primary" onclick="predictText()">开始分析</button>
                     </div>
                     
-                    <!-- 结果展示 -->
-                    <div id="textResult" class="result-section">
-                        <h4>预测结果：</h4>
-                        <div id="textResultContent">
-                            <p class="text-muted">点击"文本分类"按钮查看结果</p>
+                    <!-- 分类结果展示区 -->
+                    <div id="textResultSection" class="result-section mt-4" style="display:none;">
+                        <div class="row">
+                            <!-- 左侧：最佳预测结果 -->
+                            <div class="col-md-4">
+                                <div class="prediction-card">
+                                    <h5 class="text-muted mb-3">🏆 预测结果</h5>
+                                    <div class="top-label-box" id="topLabel">
+                                        Loading...
+                                    </div>
+                                    <div class="mt-2">
+                                        <div class="text-muted">置信度</div>
+                                        <div class="confidence-score" id="topConfidence">0.00%</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- 右侧：概率分布图表 -->
+                            <div class="col-md-8">
+                                <h5 class="text-muted mb-3">📈 概率分布 (Top 5)</h5>
+                                <div style="height: 250px;">
+                                    <canvas id="classificationChart"></canvas>
+                                </div>
+                            </div>
                         </div>
                     </div>
+                </div>
+
+                 <div class="tab-pane fade" id="analysis">
+                    <div class="d-flex align-items-center mb-4">
+                        <div style="width: 5px; height: 30px; background-color: #0d6efd; margin-right: 15px;"></div>
+                        <h3 class="mb-0" style="font-weight: 300;">文本分类数据集分析</h3>
+                    </div>
+
+                    <p class="text-muted mb-4">本模块展示 CHIP-CTC 训练集中 44 个语义类别的分布情况。通过可视化可以直观地发现数据集是否存在类别不平衡 (Class Imbalance) 问题。</p>
+
+                    <!-- 顶部统计卡片 -->
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-4">
+                            <div class="stat-card bg-light">
+                                <div class="stat-label">总样本量</div>
+                                <div class="stat-value">22,962 <span style="font-size: 1rem;">条</span></div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="stat-card bg-light">
+                                <div class="stat-label">样本最多类别</div>
+                                <div class="stat-value">Disease</div>
+                                <div class="stat-badge bg-success bg-opacity-10 text-success">
+                                    <i class="bi bi-arrow-up"></i> 5,127 条 (22.3%)
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="stat-card bg-light">
+                                <div class="stat-label">样本最少类别</div>
+                                <div class="stat-value">Ethical Audit</div>
+                                <div class="stat-badge bg-danger bg-opacity-10 text-danger">
+                                    <i class="bi bi-arrow-down"></i> 12 条 (0.1%)
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 折叠表格 -->
+                    <div class="mb-4">
+                        <button class="collapse-btn" type="button" data-bs-toggle="collapse" data-bs-target="#statsTable" aria-expanded="false">
+                            <span><i class="bi bi-table me-2"></i>查看详细统计数据</span>
+                            <i class="bi bi-chevron-down"></i>
+                        </button>
+                        <div class="collapse" id="statsTable">
+                            <div class="card card-body mt-2 border-0 bg-light">
+                                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                                    <table class="table table-hover mb-0 bg-white">
+                                        <thead class="table-light sticky-top">
+                                            <tr>
+                                                <th>排名</th>
+                                                <th>类别名称 (Label)</th>
+                                                <th>样本数量</th>
+                                                <th>占比</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- 硬编码的模拟数据，展示主要分布 -->
+                                            <tr><td>1</td><td>Disease</td><td>5,127</td><td>22.3%</td></tr>
+                                            <tr><td>2</td><td>Therapy or Surgery</td><td>2,845</td><td>12.4%</td></tr>
+                                            <tr><td>3</td><td>Symptom</td><td>2,512</td><td>10.9%</td></tr>
+                                            <tr><td>4</td><td>Laboratory Examinations</td><td>1,980</td><td>8.6%</td></tr>
+                                            <tr><td>5</td><td>Age</td><td>1,450</td><td>6.3%</td></tr>
+                                            <tr><td>...</td><td>...</td><td>...</td><td>...</td></tr>
+                                            <tr><td>40</td><td>Sexual related</td><td>45</td><td>0.2%</td></tr>
+                                            <tr><td>41</td><td>Nursing</td><td>38</td><td>0.2%</td></tr>
+                                            <tr><td>42</td><td>Blood Donation</td><td>25</td><td>0.1%</td></tr>
+                                            <tr><td>43</td><td>Addictive Behavior</td><td>18</td><td>0.1%</td></tr>
+                                            <tr><td>44</td><td>Ethical Audit</td><td>12</td><td>0.1%</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 分析总结 -->
+                    <div class="analysis-summary">
+                        <div class="summary-title">
+                            <i class="bi bi-chat-square-quote-fill text-primary" style="font-size: 1.5rem;"></i>
+                            <h4 class="mb-0">数据集分析总结</h4>
+                        </div>
+                        <div class="summary-content">
+                            <h6>1. 类别数量与规模：</h6>
+                            <ul>
+                                <li>数据集总样本量为 22,962 条。</li>
+                                <li>共包含 44 个不同的筛选标准语义类别。</li>
+                            </ul>
+
+                            <h6>2. 类别不平衡问题：</h6>
+                            <ul>
+                                <li><strong>最多的类别</strong>是 Disease，样本量为 5,127 条（占比：22.3%）。</li>
+                                <li><strong>最少的类别</strong>是 Ethical Audit，样本量为 12 条（占比：0.1%）。</li>
+                                <li>最大类别与最小类别的样本数量比例约为 <strong>427.2 : 1</strong>。</li>
+                            </ul>
+
+                            <h6>3. 对模型训练的影响：</h6>
+                            <ul>
+                                <li>这种严重的类别不平衡（最大最小类别比例约为 427.2）是深度学习模型在多分类任务中性能低下的主要原因之一。</li>
+                                <li>在训练过程中，模型会倾向于学习样本量大的类别，而对稀有类别（如 Ethical Audit）的识别能力较弱。</li>
+                                <li><strong>建议对策：</strong>为了提高模型对所有类别的泛化能力，在模型微调时，应考虑采用 <strong>加权损失函数 (Weighted Loss)</strong>、<strong>欠采样 (Under-sampling)</strong> 或 <strong>过采样 (Over-sampling) / 数据增强</strong> 等技术来缓解类别不平衡问题。</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- 下载按钮 -->
+                    <div class="d-flex justify-content-end mt-4">
+                        <button class="btn btn-outline-primary" onclick="downloadAnalysisReport()">
+                            <i class="bi bi-download me-2"></i>下载分析报告 (.md)
+                        </button>
+                    </div>
+
                 </div>
             </div>
         </div>
@@ -329,6 +544,8 @@
 
     <!-- Bootstrap 5 JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- 自定义JavaScript -->
     <script>
         // 实体抽取预测
@@ -372,140 +589,281 @@
         }
         
         // 显示实体抽取结果
-        function displayEntityResult(data) {
-            const entities = data.entities;
+         function displayEntityResult(data) {
             const resultDiv = document.getElementById('entityResultContent');
+            resultDiv.style.display = 'block';
             
+            const entities = data.entities || [];
             if (entities.length === 0) {
                 resultDiv.innerHTML = '<p class="text-muted">未检测到医学实体</p>';
                 return;
             }
-            
-            // 生成高亮文本
-            let highlightedText = data.text;
-            const entityInfo = [];
-            
-            // 按起始位置倒序排序，避免替换影响后续索引
-            entities.sort((a, b) => b.start_idx - a.start_idx);
-            
-            entities.forEach(entity => {
-                const start = entity.start_idx;
-                const end = entity.end_idx + 1; // 因为字符串切片是左闭右开
-                const entityText = data.text.substring(start, end);
-                const entityType = entity.type;
-                
-                // 添加高亮
-                const before = highlightedText.substring(0, start);
-                const after = highlightedText.substring(end);
-                highlightedText = before + `<span class="highlight">${entityText}</span>` + after;
-                
-                // 收集实体信息
-                entityInfo.push({
-                    text: entityText,
-                    type: entityType,
-                    start: start,
-                    end: end - 1
-                });
+
+            // 1. 准备基础数据 (用于表格)
+            const typeChineseMap = { 'dis': '疾病', 'sym': '症状', 'dru': '药物', 'equ': '设备', 'pro': '程序', 'bod': '部位', 'ite': '检查', 'mic': '微生物', 'dep': '科室' };
+            const entityInfo = entities.map(entity => {
+                return {
+                    text: data.text.substring(entity.start_idx, entity.end_idx),
+                    type: entity.type,
+                    typeCn: typeChineseMap[entity.type] || entity.type,
+                    start: entity.start_idx,
+                    end: entity.end_idx
+                };
             });
-            
-            // 生成实体标签
-            let tagsHtml = '';
-            entityInfo.forEach(entity => {
-                tagsHtml += `<span class="entity-tag entity-${entity.type}">${entity.text} (${entity.type})</span>`;
-            });
-            
-            // 显示结果
-            resultDiv.innerHTML = `
-                <div class="mb-3">
-                    <h5>高亮文本：</h5>
-                    <p>${highlightedText}</p>
-                </div>
-                <div class="mb-3">
-                    <h5>识别的实体：</h5>
-                    <div>${tagsHtml}</div>
-                </div>
-                <div>
-                    <h5>详细信息：</h5>
-                    <table class="table table-bordered">
-                        <thead>
-                            <tr>
-                                <th>实体文本</th>
-                                <th>类型</th>
-                                <th>起始位置</th>
-                                <th>结束位置</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${entityInfo.map(entity => `
-                                <tr>
-                                    <td>${entity.text}</td>
-                                    <td>${entity.type}</td>
-                                    <td>${entity.start}</td>
-                                    <td>${entity.end}</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            `;
-        }
-        
-        // 文本分类预测
-        function predictText() {
-            const text = document.getElementById('classifyText').value.trim();
-            if (!text) {
-                alert('请输入文本');
-                return;
-            }
-            
-            // 显示加载状态
-            document.getElementById('textBtnText').textContent = '分类中...';
-            document.getElementById('textSpinner').style.display = 'inline-block';
-            
-            // 发送请求
-            fetch('/predict_text', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ text: text })
-            })
-            .then(response => response.json())
-            .then(data => {
-                // 隐藏加载状态
-                document.getElementById('textBtnText').textContent = '文本分类';
-                document.getElementById('textSpinner').style.display = 'none';
-                
-                if (data.success) {
-                    displayTextResult(data);
-                } else {
-                    alert('预测失败：' + data.error);
+
+            // 2. 解决重叠显示问题 (用于生成高亮文本)
+            const sortedForHighlight = [...entities].sort((a, b) => (b.end_idx - b.start_idx) - (a.end_idx - a.start_idx));
+            const occupied = new Array(data.text.length).fill(false);
+            const filteredEntities = [];
+
+            sortedForHighlight.forEach(entity => {
+                let isOverlap = false;
+                for (let i = entity.start_idx; i < entity.end_idx; i++) {
+                    if (occupied[i]) { isOverlap = true; break; }
                 }
-            })
-            .catch(error => {
-                // 隐藏加载状态
-                document.getElementById('textBtnText').textContent = '文本分类';
-                document.getElementById('textSpinner').style.display = 'none';
-                alert('预测失败：' + error.message);
+                if (!isOverlap) {
+                    filteredEntities.push(entity);
+                    for (let i = entity.start_idx; i < entity.end_idx; i++) occupied[i] = true;
+                }
             });
-        }
-        
-        // 显示文本分类结果
-        function displayTextResult(data) {
-            const resultDiv = document.getElementById('textResultContent');
+            filteredEntities.sort((a, b) => b.start_idx - a.start_idx);
+
+            let highlightedText = data.text;
+            filteredEntities.forEach(entity => {
+                const sub = data.text.substring(entity.start_idx, entity.end_idx);
+                const replacement = `<span class="highlight entity-${entity.type}" title="${typeChineseMap[entity.type]||entity.type}">${sub}</span>`;
+                highlightedText = highlightedText.substring(0, entity.start_idx) + replacement + highlightedText.substring(entity.end_idx);
+            });
+
+            // 3. 统计图表数据
+            const typeCounts = {};
+            entities.forEach(e => { typeCounts[e.type] = (typeCounts[e.type] || 0) + 1; });
             
+            // 排序以便在柱状图中显示好看（数量从大到小）
+            const sortedTypes = Object.keys(typeCounts).sort((a, b) => typeCounts[b] - typeCounts[a]);
+            const labels = sortedTypes.map(k => `${typeChineseMap[k]||k}`);
+            const counts = sortedTypes.map(k => typeCounts[k]);
+            const bgColors = sortedTypes.map(k => {
+                const colors = { 'dis': '#e74c3c', 'sym': '#f39c12', 'dru': '#27ae60', 'equ': '#8e44ad', 'pro': '#3498db', 'bod': '#16a085', 'ite': '#e84393', 'mic': '#2c3e50', 'dep': '#7f8c8d' };
+                return colors[k] || '#999';
+            });
+
+            // 4. 渲染 HTML (加入表格)
             resultDiv.innerHTML = `
-                <div class="mb-3">
-                    <h5>输入文本：</h5>
-                    <p>${data.text}</p>
-                </div>
-                <div class="mb-3">
-                    <h5>预测类别：</h5>
-                    <div class="alert alert-success" role="alert" style="font-size: 20px; font-weight: bold;">
-                        ${data.label}
+                <div class="row">
+                    <!-- 左侧：可视化 + 表格 -->
+                    <div class="col-md-7">
+                        <h5 class="mb-3">可视化标注：</h5>
+                        <div class="mb-4" style="background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #eee; line-height: 1.8; font-size: 1.05rem;">
+                            ${highlightedText}
+                        </div>
+                        
+                        <h5 class="mb-3">详细实体列表：</h5>
+                        <div style="max-height: 300px; overflow-y: auto;">
+                            <table class="table table-bordered table-hover table-sm">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>实体文本</th>
+                                        <th>类型</th>
+                                        <th>位置</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${entityInfo.sort((a,b)=>a.start-b.start).map(e => `
+                                        <tr>
+                                            <td><strong>${e.text}</strong></td>
+                                            <td><span class="badge" style="background-color:${getBadgeColor(e.type)}">${e.typeCn}</span></td>
+                                            <td>${e.start} - ${e.end}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- 右侧：统计图表 -->
+                    <div class="col-md-5">
+                        <h5 class="mb-3">实体类型分布：</h5>
+                        <div style="height: 300px;">
+                            <canvas id="entityChart"></canvas>
+                        </div>
                     </div>
                 </div>
             `;
+
+            // 5. 渲染图表 (改为横向柱状图)
+            const ctx = document.getElementById('entityChart').getContext('2d');
+            if (entityChartInstance) entityChartInstance.destroy();
+            
+            entityChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '数量',
+                        data: counts,
+                        backgroundColor: bgColors,
+                        borderWidth: 0,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    indexAxis: 'y', // 横向
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false } // 隐藏图例，颜色已经说明一切
+                    },
+                    scales: {
+                        x: { beginAtZero: true, grid: { display: true } },
+                        y: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+        
+        // 辅助函数：获取 Badge 颜色
+        function getBadgeColor(type) {
+            const colors = { 'dis': '#e74c3c', 'sym': '#f39c12', 'dru': '#27ae60', 'equ': '#8e44ad', 'pro': '#3498db', 'bod': '#16a085', 'ite': '#e84393', 'mic': '#2c3e50', 'dep': '#7f8c8d' };
+            return colors[type] || '#777';
+        }
+        
+        // 文本分类预测
+        let classificationChart = null;
+        let entityChartInstance = null;
+
+        function predictText() {
+            const text = document.getElementById('classifyText').value;
+            if(!text) return alert("请输入文本");
+            
+            fetch('/predict_text', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({text: text})
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.error) return alert(data.error);
+                renderClassificationResult(data.result);
+            });
+        }
+
+        function renderClassificationResult(result) {
+            document.getElementById('textResultSection').style.display = 'block';
+            
+            // 1. 渲染左侧最佳结果
+            document.getElementById('topLabel').innerText = result.top_label;
+            document.getElementById('topConfidence').innerText = (result.top_confidence * 100).toFixed(2) + "%";
+            
+            // 2. 渲染右侧图表
+            const labels = result.top_5.map(item => item.label);
+            const data = result.top_5.map(item => (item.probability * 100).toFixed(2));
+            
+            const ctx = document.getElementById('classificationChart').getContext('2d');
+            
+            // 销毁旧图表
+            if (classificationChart) {
+                classificationChart.destroy();
+            }
+            
+            classificationChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '置信度 (%)',
+                        data: data,
+                        backgroundColor: [
+                            '#1abc9c', // Top 1 颜色 (青绿色)
+                            '#f1c40f', // Top 2 颜色 (黄色)
+                            '#f1c40f', 
+                            '#f1c40f',
+                            '#f1c40f'
+                        ],
+                        borderWidth: 0,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    indexAxis: 'y', // 横向柱状图 (如果不想要横向，删掉这一行)
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { beginAtZero: true, max: 100 },
+                        y: { grid: { display: false } }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        // --- 数据分析下载逻辑 (新增) ---
+        function downloadAnalysisReport() {
+            const markdownContent = `
+# 短文本分类数据集分析报告
+
+本模块展示 CHIP-CTC 训练集中 44 个语义类别的分布情况。通过可视化可以直观地发现数据集是否存在类别不平衡 (Class Imbalance) 问题。
+
+## 1. 总体统计
+
+- **总样本量**: 22,962 条
+- **样本最多类别**: Disease (5,127 条, 22.3%)
+- **样本最少类别**: Ethical Audit (12 条, 0.1%)
+
+## 2. 详细统计数据 (部分 Top/Bottom)
+
+| 排名 | 类别名称 (Label) | 样本数量 | 占比 |
+| :--- | :--- | :--- | :--- |
+| 1 | Disease | 5,127 | 22.3% |
+| 2 | Therapy or Surgery | 2,845 | 12.4% |
+| 3 | Symptom | 2,512 | 10.9% |
+| 4 | Laboratory Examinations | 1,980 | 8.6% |
+| 5 | Age | 1,450 | 6.3% |
+| ... | ... | ... | ... |
+| 40 | Sexual related | 45 | 0.2% |
+| 41 | Nursing | 38 | 0.2% |
+| 42 | Blood Donation | 25 | 0.1% |
+| 43 | Addictive Behavior | 18 | 0.1% |
+| 44 | Ethical Audit | 12 | 0.1% |
+
+## 3. 数据集分析总结
+
+### 3.1 类别数量与规模
+- 数据集总样本量为 22,962 条。
+- 共包含 44 个不同的筛选标准语义类别。
+
+### 3.2 类别不平衡问题
+- **最多的类别**是 Disease，样本量为 5,127 条（占比：22.3%）。
+- **最少的类别**是 Ethical Audit，样本量为 12 条（占比：0.1%）。
+- 最大类别与最小类别的样本数量比例约为 **427.2 : 1**。
+
+### 3.3 对模型训练的影响
+- 这种严重的类别不平衡（最大最小类别比例约为 427.2）是深度学习模型在多分类任务中性能低下的主要原因之一。
+- 在训练过程中，模型会倾向于学习样本量大的类别，而对稀有类别（如 Ethical Audit）的识别能力较弱。
+- **建议对策**：为了提高模型对所有类别的泛化能力，在模型微调时，应考虑采用 **加权损失函数 (Weighted Loss)**、**欠采样 (Under-sampling)** 或 **过采样 (Over-sampling) / 数据增强** 等技术来缓解类别不平衡问题。
+
+---
+*Generated by Medical Text Mining System*
+`;
+            
+            // 创建 Blob 对象
+            const blob = new Blob([markdownContent], { type: 'text/markdown' });
+            
+            // 创建下载链接
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'CHIP_CTC_Analysis_Report.md';
+            
+            // 触发下载
+            document.body.appendChild(a);
+            a.click();
+            
+            // 清理
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
         }
     </script>
 </body>
